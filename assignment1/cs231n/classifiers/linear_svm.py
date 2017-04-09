@@ -52,7 +52,8 @@ def svm_loss_naive(W, X, y, reg):
   # loss is being computed. As a result you may need to modify some of the    #
   # code above to compute the gradient.                                       #
   #############################################################################
-  dW = (dW / num_train) + (reg * W)
+  dW /= num_train 
+  dW += (reg * W)
 
   return loss, dW
 
@@ -63,6 +64,8 @@ def svm_loss_vectorized(W, X, y, reg):
 
   Inputs and outputs are the same as svm_loss_naive.
   """
+  num_classes = W.shape[1]
+  num_train = X.shape[0]
   loss = 0.0
   dW = np.zeros(W.shape) # initialize the gradient as zero
 
@@ -71,7 +74,18 @@ def svm_loss_vectorized(W, X, y, reg):
   # Implement a vectorized version of the structured SVM loss, storing the    #
   # result in loss.                                                           #
   #############################################################################
-  pass
+  scores = X.dot(W)
+  correct_class_scores = scores[range(num_train), y]
+  correct_class_scores = np.reshape(correct_class_scores, (num_train, 1))
+  loss_matrix = scores - correct_class_scores + 1
+  loss_matrix[range(num_train), y] = 0;
+  loss_matrix = np.maximum(np.zeros((num_train, num_classes)), loss_matrix)
+
+  loss = np.sum(loss_matrix)
+  loss /= num_train
+
+  # Add regulariztion
+  loss += 0.5 * reg * np.sum(W * W)
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
@@ -86,7 +100,13 @@ def svm_loss_vectorized(W, X, y, reg):
   # to reuse some of the intermediate values that you used to compute the     #
   # loss.                                                                     #
   #############################################################################
-  pass
+  binary = loss_matrix
+  binary[loss_matrix > 0] = 1
+  binary[range(num_train), y] = -np.sum(binary, axis=1)
+  dW = (X.T).dot(binary)
+  dW /= num_train
+  dW += reg * W 
+
   #############################################################################
   #                             END OF YOUR CODE                              #
   #############################################################################
