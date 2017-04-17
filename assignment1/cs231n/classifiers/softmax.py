@@ -39,11 +39,11 @@ def softmax_loss_naive(W, X, y, reg):
     loss += loss_i
 
     for j in xrange(num_classes):
-      dWj = np.exp(shifted_scores[j]) / np.sum(np.exp(shifted_scores))
+      softmax_output = np.exp(shifted_scores[j]) / np.sum(np.exp(shifted_scores))
       if j == y[i]:
-        dW[:, j] += (-1 + dWj) * X[i] 
+        dW[:, j] += (-1 + softmax_output) * X[i] 
       else:
-        dW[:,j] += dWj * X[i]
+        dW[:,j] += softmax_output * X[i]
     
   loss /= num_train
   loss += 0.5 * reg * np.sum(W * W)

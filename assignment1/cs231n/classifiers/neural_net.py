@@ -74,7 +74,15 @@ class TwoLayerNet(object):
     # Store the result in the scores variable, which should be an array of      #
     # shape (N, C).                                                             #
     #############################################################################
-    pass
+    
+    # Reference: http://cs231n.github.io/neural-networks-case-study/
+    # pass through ReLU activation function
+    f = lambda x: np.maximum(0, x)
+
+    h1 = f(X.dot(W1) + b1)
+    h2 = h1.dot(W2) + b2
+
+    scores = h2
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -92,7 +100,11 @@ class TwoLayerNet(object):
     # classifier loss. So that your results match ours, multiply the            #
     # regularization loss by 0.5                                                #
     #############################################################################
-    pass
+    shifted_scores = scores - np.max(scores, axis=1).reshape(-1, 1)
+    softmax_output = np.exp(shifted_scores) / np.sum(np.exp(shifted_scores), axis=1).reshape(-1, 1)
+    loss = np.sum(-np.log(softmax_output[range(N), y]))
+    loss /= N
+    loss += 0.5 * reg * (np.sum(W1 * W1)+np.sum(W2 * W2))
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
@@ -104,14 +116,34 @@ class TwoLayerNet(object):
     # and biases. Store the results in the grads dictionary. For example,       #
     # grads['W1'] should store the gradient on W1, and be a matrix of same size #
     #############################################################################
-    pass
+    
+    # dscores: the gradient of the loss function with respect to the scores
+    dscores = softmax_output.copy()
+    dscores[range(N), y] += -1
+    dscores /= N
+
+    # by chain rule: 
+    # dL/dW = dL/dscores * dscores/dW    
+    # dL/db = dL/dscores * dscores/db
+    grads['W2'] = np.dot(h1.T, dscores) + (req * W2)
+    grads['b2'] = np.sum(dscores, axis=0, keepdims=True)
+    
+    dhidden = np.dot(dscores, W2.T)
+    dhidden[hidden <= 0] = 0
+    
+    grads['W1'] = np.dot(X.T, dhidden)
+    grads['b1'] = np.sum(dhidden, axis=0, keepdims=True)
+
+    grads['W2'] += reg * W2
+    grads['W1'] += reg * W1
+
     #############################################################################
     #                              END OF YOUR CODE                             #
     #############################################################################
 
     return loss, grads
-
-  def train(self, X, y, X_val, y_val,
+_
+  def train(self, X, y, Xval, y_val,
             learning_rate=1e-3, learning_rate_decay=0.95,
             reg=1e-5, num_iters=100,
             batch_size=200, verbose=False):
