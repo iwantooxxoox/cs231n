@@ -101,8 +101,8 @@ class TwoLayerNet(object):
     # regularization loss by 0.5                                                #
     #############################################################################
     shifted_scores = scores - np.max(scores, axis=1).reshape(-1, 1)
-    softmax_output = np.exp(shifted_scores) / np.sum(np.exp(shifted_scores), axis=1).reshape(-1, 1)
-    loss = np.sum(-np.log(softmax_output[range(N), y]))
+    probs = np.exp(shifted_scores) / np.sum(np.exp(shifted_scores), axis=1).reshape(-1, 1)
+    loss = np.sum(-np.log(probs[range(N), y]))
     loss /= N
     loss += 0.5 * reg * (np.sum(W1 * W1)+np.sum(W2 * W2))
     #############################################################################
@@ -118,19 +118,26 @@ class TwoLayerNet(object):
     #############################################################################
     
     # dscores: the gradient of the loss function with respect to the scores
-    dscores = softmax_output.copy()
+    dscores = probs.copy()
     dscores[range(N), y] += -1
     dscores /= N
 
     # by chain rule: 
-    # dL/dW = dL/dscores * dscores/dW    
-    # dL/db = dL/dscores * dscores/db
-    grads['W2'] = np.dot(h1.T, dscores) + (req * W2)
+    # dL/dW = dscores/dW * dL/dscores
+    # dL/db = dscores/db * dL/dscores
+    grads['W2'] = np.dot(h1.T, dscores)
     grads['b2'] = np.sum(dscores, axis=0, keepdims=True)
-    
+
+    # dhidden = dscores/dhidden * dL/dscores
+    # scores = hidden (dot) W2
     dhidden = np.dot(dscores, W2.T)
-    dhidden[hidden <= 0] = 0
+
+    # backprop the ReLU non-linearity
+    # r = max(0, x) => dr/dx = 1, otherwise 0
+    dhidden[h1 <= 0] = 0
     
+    # dL/dW1 = dhidden/dW1 * dL/dhidden
+    # dL/db = dhidden/db * dL/dhidden
     grads['W1'] = np.dot(X.T, dhidden)
     grads['b1'] = np.sum(dhidden, axis=0, keepdims=True)
 
@@ -142,8 +149,8 @@ class TwoLayerNet(object):
     #############################################################################
 
     return loss, grads
-_
-  def train(self, X, y, Xval, y_val,
+
+  def train(self, X, y, X_val, y_val,
             learning_rate=1e-3, learning_rate_decay=0.95,
             reg=1e-5, num_iters=100,
             batch_size=200, verbose=False):
@@ -180,7 +187,9 @@ _
       # TODO: Create a random minibatch of training data and labels, storing  #
       # them in X_batch and y_batch respectively.                             #
       #########################################################################
-      pass
+      sample_indices = np.random.choice(np.arange(num_train), batch_size)
+      X_batch = X[sample_indices]
+      y_batch = y[sample_indices]
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -195,7 +204,10 @@ _
       # using stochastic gradient descent. You'll need to use the gradients   #
       # stored in the grads dictionary defined above.                         #
       #########################################################################
-      pass
+      self.params['W1'] = self.params['W1'] -learning_rate*grads['W1'] 
+      self.params['W2'] = self.params['W2'] -learning_rate*grads['W2'] 
+      self.params['b1'] = self.params['b1'] -learning_rate*grads['b1']
+      self.params['b2'] = self.params['b2'] -learning_rate*grads['b2'] 
       #########################################################################
       #                             END OF YOUR CODE                          #
       #########################################################################
@@ -240,7 +252,12 @@ _
     ###########################################################################
     # TODO: Implement this function; it should be VERY simple!                #
     ###########################################################################
-    pass
+    f = lambda x: np.maximum(0,x)
+    h1 = f(np.dot(X, self.params['W1']) + self.params['b1'])
+    h2 = np.dot(h1,self.params['W2']) + self.params['b2']
+    scores = h2
+
+    y_pred = np.argmax(scores, axis = 1)
     ###########################################################################
     #                              END OF YOUR CODE                           #
     ###########################################################################
