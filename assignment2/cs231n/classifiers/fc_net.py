@@ -188,7 +188,7 @@ class FullyConnectedNet(object):
 
      if use_batchnorm and i != self.num_layers:
       self.params['beta'+str(i)] = np.zeros(layer_output_dim)
-      self.params['gama'+str(i)] = np.ones(layer_output_dim)
+      self.params['gamma'+str(i)] = np.ones(layer_output_dim)
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
