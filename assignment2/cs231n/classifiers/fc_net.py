@@ -228,7 +228,8 @@ class FullyConnectedNet(object):
     # Set train/test mode for batchnorm params and dropout param since they
     # behave differently during training and testing.
     if self.dropout_param is not None:
-      self.dropout_param['mode'] = mode   
+      self.dropout_param['mode'] = mode
+
     if self.use_batchnorm:
       for bn_param in self.bn_params:
         bn_param[mode] = mode
@@ -262,6 +263,10 @@ class FullyConnectedNet(object):
         key_beta = 'beta'+str(i)
         current_input, affine_bn_relu_cache[i] = affine_bn_relu_forward(current_input, self.params[keyW], self.params[keyb],
                                                                                   self.params[key_gamma], self.params[key_beta], self.bn_params[i-1] )
+
+      if self.use_dropout:
+        current_input, dropout_cache[i] = dropout_forward(current_input,self.dropout_param)
+
     # Last affine layer:
     keyW = 'W' + str(self.num_layers)
     keyb = 'b' + str(self.num_layers)
